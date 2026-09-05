@@ -1,0 +1,19 @@
+experiment_id,timestamp,model_name,prompt_strategy,source_file,orig_cyclomatic_complexity,orig_halstead_volume,orig_maintainability_index,orig_test_pass_rate,orig_coverage_percentage,refact_cyclomatic_complexity,refact_halstead_volume,refact_maintainability_index,refact_test_pass_rate,refact_coverage_percentage,delta_complexity,delta_halstead_volume,delta_maintainability_index,delta_test_pass_rate,delta_coverage_percentage,behavior_preserved
+9,2026-09-05T20:25:22.136819,MockLLMProvider(model=mock-default),Refactor the code to adhere st...,humaneval_0.py,5.0,28.53,67.32,0.0,0.0,5.0,28.53,85.95,0.0,0.0,0.0,0.0,18.63,0.0,0.0,False
+10,2026-09-05T20:25:22.139408,MockLLMProvider(model=mock-default),Refactor to reduce cyclomatic ...,humaneval_0.py,5.0,28.53,67.32,0.0,0.0,5.0,28.53,85.95,0.0,0.0,0.0,0.0,18.63,0.0,0.0,False
+11,2026-09-05T20:25:22.140757,MockLLMProvider(model=mock-default),Refactor the code to adhere st...,humaneval_4.py,2.0,27.0,74.46,0.0,0.0,2.0,27.0,99.62,0.0,0.0,0.0,0.0,25.16,0.0,0.0,False
+12,2026-09-05T20:25:22.142145,MockLLMProvider(model=mock-default),Refactor to reduce cyclomatic ...,humaneval_4.py,2.0,27.0,74.46,0.0,0.0,2.0,27.0,99.62,0.0,0.0,0.0,0.0,25.16,0.0,0.0,False
+13,2026-09-05T20:25:22.144837,MockLLMProvider(model=mock-default),Refactor the code to adhere st...,nested_calculator.py,14.0,367.06,46.48,0.0,0.0,14.0,367.06,56.51,0.0,0.0,0.0,0.0,10.03,0.0,0.0,False
+14,2026-09-05T20:25:22.147366,MockLLMProvider(model=mock-default),Refactor to reduce cyclomatic ...,nested_calculator.py,14.0,367.06,46.48,0.0,0.0,14.0,367.06,56.51,0.0,0.0,0.0,0.0,10.03,0.0,0.0,False
+15,2026-09-05T20:25:22.149093,MockLLMProvider(model=mock-default),Refactor the code to adhere st...,humaneval_1.py,5.0,47.55,60.74,0.0,0.0,5.0,47.55,75.22,0.0,0.0,0.0,0.0,14.48,0.0,0.0,False
+16,2026-09-05T20:25:22.150842,MockLLMProvider(model=mock-default),Refactor to reduce cyclomatic ...,humaneval_1.py,5.0,47.55,60.74,0.0,0.0,5.0,47.55,75.22,0.0,0.0,0.0,0.0,14.48,0.0,0.0,False
+17,2026-09-05T20:25:22.151860,MockLLMProvider(model=mock-default),Refactor the code to adhere st...,example_01.py,1.0,4.75,84.72,0.0,0.0,1.0,4.75,100.0,0.0,0.0,0.0,0.0,15.28,0.0,0.0,False
+18,2026-09-05T20:25:22.153133,MockLLMProvider(model=mock-default),Refactor to reduce cyclomatic ...,example_01.py,1.0,4.75,84.72,0.0,0.0,1.0,4.75,100.0,0.0,0.0,0.0,0.0,15.28,0.0,0.0,False
+19,2026-09-05T20:25:22.154028,MockLLMProvider(model=mock-default),Refactor the code to adhere st...,__init__.py,0.0,0.0,100.0,0.0,0.0,1.0,0.0,100.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,False
+20,2026-09-05T20:25:22.154869,MockLLMProvider(model=mock-default),Refactor to reduce cyclomatic ...,__init__.py,0.0,0.0,100.0,0.0,0.0,1.0,0.0,100.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,False
+21,2026-09-05T20:25:22.158162,MockLLMProvider(model=mock-default),Refactor the code to adhere st...,monolithic_processor.py,11.0,118.59,49.29,0.0,0.0,11.0,118.59,58.59,0.0,0.0,0.0,0.0,9.3,0.0,0.0,False
+22,2026-09-05T20:25:22.161265,MockLLMProvider(model=mock-default),Refactor to reduce cyclomatic ...,monolithic_processor.py,11.0,118.59,49.29,0.0,0.0,11.0,118.59,58.59,0.0,0.0,0.0,0.0,9.3,0.0,0.0,False
+23,2026-09-05T20:25:22.162373,MockLLMProvider(model=mock-default),Refactor the code to adhere st...,humaneval_2.py,1.0,4.75,84.72,0.0,0.0,1.0,4.75,100.0,0.0,0.0,0.0,0.0,15.28,0.0,0.0,False
+24,2026-09-05T20:25:22.163440,MockLLMProvider(model=mock-default),Refactor to reduce cyclomatic ...,humaneval_2.py,1.0,4.75,84.72,0.0,0.0,1.0,4.75,100.0,0.0,0.0,0.0,0.0,15.28,0.0,0.0,False
+25,2026-09-05T20:25:22.164698,MockLLMProvider(model=mock-default),Refactor the code to adhere st...,humaneval_3.py,3.0,13.93,70.77,0.0,0.0,3.0,13.93,90.33,0.0,0.0,0.0,0.0,19.56,0.0,0.0,False
+26,2026-09-05T20:25:22.165929,MockLLMProvider(model=mock-default),Refactor to reduce cyclomatic ...,humaneval_3.py,3.0,13.93,70.77,0.0,0.0,3.0,13.93,90.33,0.0,0.0,0.0,0.0,19.56,0.0,0.0,False
