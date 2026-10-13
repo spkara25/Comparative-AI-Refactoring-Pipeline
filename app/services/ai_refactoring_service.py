@@ -1,12 +1,14 @@
+
 import random
+
 from app.models.refactoring_request import RefactoringRequest
 from app.models.refactored_code import RefactoredCode
 from app.services.llm_provider import LLMProvider
+from app.services.code_cleaner import CodeCleaner
+
 
 class AIRefactoringService:
-    """
-    Coordinates the refactoring process using a dependency-injected LLM provider.
-    """
+    """Coordinates code generation, cleaning, and syntax validation."""
 
     def __init__(self, provider: LLMProvider):
         self.provider = provider
@@ -14,18 +16,26 @@ class AIRefactoringService:
     def process_request(self, request: RefactoringRequest) -> RefactoredCode:
         request.update_status("PROCESSING")
 
-        refactored_content = self.provider.generate_code(
-            prompt=request.prompt_config.prompt_text,
-            original_code=request.original_code
-        )
+        try:
+            raw_content = self.provider.generate_code(
+                prompt=request.prompt_config.prompt_text,
+                original_code=request.original_code,
+            )
 
-        request.update_status("COMPLETED")
+            cleaned_content = CodeCleaner.extract_python_code(raw_content)
 
-        mock_db_id = random.randint(1000, 9999)
+            # FR-14: Reject invalid Python before evaluation.
+            CodeCleaner.validate_python_syntax(cleaned_content)
 
-        return RefactoredCode(
-            code_id=mock_db_id,
-            code_content=refactored_content,
-            language=request.language,
-            request_id=request.request_id
-        )
+            request.update_status("COMPLETED")
+
+            return RefactoredCode(
+                code_id=random.randint(1000, 9999),
+                code_content=cleaned_content,
+                language=request.language,
+                request_id=request.request_id,
+            )
+
+        except Exception:
+            request.update_status("FAILED")
+            raise

@@ -6,8 +6,12 @@ from app.services.experiment_runner import ExperimentRunner
 from app.services.visual_reporting_service import VisualReportingService
 from app.storage.database import get_database_engine
 from app.storage.repository import DatabaseRepository
+from app.services.logging_config import configure_logging
 
 def main():
+    configure_logging()
+
+
     print("=" * 60)
     print("COMPARATIVE AI REFACTORING PIPELINE")
     print("=" * 60)

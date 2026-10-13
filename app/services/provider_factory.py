@@ -5,6 +5,7 @@ from app.services.llm_provider import LLMProvider
 from app.services.mock_llm_provider import MockLLMProvider
 from app.services.openai_provider import OpenAIProvider
 from app.services.anthropic_provider import AnthropicProvider
+from app.services.gemini_provider import GeminiProvider
 
 load_dotenv()
 
@@ -47,6 +48,25 @@ class ProviderFactory:
                 model_name=target_model,
                 temperature=temperature,
                 api_key=api_key
+            )
+        if provider == "gemini":
+            api_key = os.getenv("GEMINI_API_KEY")
+
+            if not api_key:
+                raise ValueError(
+                    "GEMINI_API_KEY environment variable is not set."
+                )
+
+            target_model = (
+                model
+                if model != "default"
+                else "gemini-flash-latest"
+            )
+
+            return GeminiProvider(
+                model_name=target_model,
+                temperature=temperature,
+                api_key=api_key,
             )
 
         raise ValueError(f"Unsupported provider: '{provider}'")

@@ -1,196 +1,223 @@
 # Comparative AI Refactoring Pipeline
 
-An automated, empirical benchmarking pipeline designed to evaluate Large Language Models (OpenAI GPT-4o, Anthropic Claude 3.5 Sonnet, and offline Mock providers) on legacy code refactoring. The system quantitatively measures changes in code maintainability, cognitive effort, and cyclomatic complexity while enforcing strict behavioral invariance inside a zero-trust Docker execution sandbox.
+A research-oriented Python application for evaluating Large Language Models (LLMs) on legacy Python code refactoring. The pipeline runs refactoring experiments, measures code quality before and after refactoring, executes regression tests, and records the results for quantitative analysis.
+
+The project is designed to investigate how different models and prompting strategies affect code complexity, maintainability, and test outcomes.
+
+> **Project status:** Experimental research prototype. The current results include preliminary experiments using Gemini and separate mock-provider benchmark runs. Further experiments are required before drawing general conclusions about model performance.
 
 ---
 
-## Architecture & Features
+## Table of Contents
 
-- **Multi-Provider LLM Abstraction:** Seamlessly switch between OpenAI (`gpt-4o`, `gpt-4o-mini`), Anthropic (`claude-3-5-sonnet`), and offline deterministic `mock` providers via an extensible factory.
-- **Dual-Tier Metric Evaluation:**
-  - **Static Analysis:** Computes McCabe Cyclomatic Complexity ($CC$), Halstead Volume ($HV$), and Maintainability Index ($MI$) via AST parsing with [Radon](https://radon.readthedocs.io/).
-  - **Dynamic Sandboxed Testing:** Executes untrusted, AI-generated code against full pytest regression suites inside an isolated Docker container with complete network disablement (`--network none`), dropped capabilities (`--cap-drop=ALL`), and strict resource limits.
-- **Behavioral Invariance Guarantee:** Verifies that candidate refactored code passes 100% of existing tests with no behavioral regressions.
-- **Persistent Telemetry:** Automatically logs experimental runs, researcher metadata, and metric deltas to SQLite or MySQL using SQLAlchemy.
-- **Automated Visualization:** Produces publication-ready grouped delta bar charts comparing complexity and maintainability shifts across prompting strategies.
+- [Objectives](#objectives)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the Tests](#running-the-tests)
+- [Running Experiments](#running-experiments)
+- [Understanding the Results](#understanding-the-results)
+- [Preliminary Gemini Experiments](#preliminary-gemini-experiments)
+- [Research Limitations](#research-limitations)
+- [Security Notes](#security-notes)
+- [Future Work](#future-work)
 
----
+## Objectives
 
-## Project Structure
+The project aims to:
 
-```text
-actual_app/
-├── app/
-│   ├── models/                  # Domain dataclasses (Researcher, Metrics, Prompts)
-│   ├── services/                # Core business logic
-│   │   ├── ai_refactoring_service.py     # AI request orchestrator
-│   │   ├── code_cleaner.py               # Markdown fence & code sanitization
-│   │   ├── dataset_service.py            # Dataset loader and file finder
-│   │   ├── docker_sandbox_service.py     # Ephemeral container execution runner
-│   │   ├── experiment_runner.py          # Factorial matrix benchmark runner
-│   │   ├── provider_factory.py           # LLM provider factory
-│   │   ├── reporting_service.py          # Delta calculation & CSV exporter
-│   │   ├── static_analysis_service.py    # Radon static metric extractor
-│   │   └── visual_reporting_service.py   # Matplotlib delta chart generator
-│   ├── storage/                 # Database connection & SQLAlchemy repository
-│   └── main.py                  # CLI pipeline entry point
-├── datasets/
-│   ├── legacy/                  # Target legacy Python source files
-│   └── tests/                   # Associated pytest verification suites
-├── docker/
-│   └── Dockerfile               # Minimal Python Alpine image for test sandboxing
-├── results/                     # Output directory for benchmarks, charts, and DB
-│   ├── benchmark_report.csv
-│   ├── complexity_maintainability_delta.png
-│   └── research_benchmark.db
-├── scripts/                     # Utility scripts (e.g., HumanEval dataset loader)
-├── tests/                       # Unit and integration tests for the pipeline
-├── requirements.txt             # Python dependencies
-└── .env.example                 # Environment variable template
-```
+1. Automate the evaluation of AI-generated refactoring of legacy Python code.
+2. Measure changes in static code quality metrics before and after refactoring.
+3. Execute available regression tests against original and refactored code.
+4. Record experimental outcomes in structured reports.
+5. Provide a foundation for comparing LLM providers and prompting strategies under a consistent evaluation procedure.
 
----
+## Features
 
-## Prerequisites
+- **LLM provider abstraction:** A configurable provider factory supports the providers implemented in the project, including Gemini and a mock provider. OpenAI and Anthropic provider integrations are available where implemented and configured.
+- **Code cleaning and syntax validation:** Extracts Python code from model responses and checks whether the resulting source can be parsed.
+- **Static analysis:** Uses Radon to calculate cyclomatic complexity, Halstead volume, and maintainability index.
+- **Automated test evaluation:** Runs available tests against original and refactored programs using the project's test-execution and sandbox workflow.
+- **Experiment reporting:** Records original metrics, refactored metrics, metric deltas, test outcomes, and experiment metadata in CSV reports.
+- **Visualization:** Provides a utility to regenerate the complexity and maintainability chart from existing benchmark data.
+- **Reliability and diagnostics:** Includes retry handling for supported transient LLM errors and application logging.
 
-- **Python:** Version 3.10 to 3.13
-- **Docker Engine / Docker Desktop:** Running locally (required for sandboxed test execution)
-- **Git:** Version 2.20+
+## Architecture
 
----
+The application follows a modular design.
 
-## Installation & Setup
+| Component | Responsibility |
+|---|---|
+| `app/main.py` | Application entry point and experiment configuration |
+| `app/services/provider_factory.py` | Selects the configured LLM provider |
+| `app/services/llm_provider.py` | Shared LLM provider abstractions and retry behavior |
+| `app/services/gemini_provider.py` | Gemini integration |
+| `app/services/ai_refactoring_service.py` | Coordinates refactoring requests |
+| `app/services/code_cleaner.py` | Extracts and validates generated Python code |
+| `app/services/static_analysis_service.py` | Computes static code metrics |
+| `app/services/test_execution_service.py` | Coordinates test evaluation |
+| `app/services/docker_sandbox_service.py` | Supports sandbox-based code execution |
+| `app/services/experiment_runner.py` | Runs individual experiments and experiment matrices |
+| `app/services/reporting_service.py` | Calculates and exports experiment metrics |
+| `app/services/visual_reporting_service.py` | Generates result visualizations |
+| `app/storage/` | Database and persistence components |
+| `datasets/legacy/` | Legacy Python programs used as experiment inputs |
+| `datasets/tests/` | Associated test files |
+| `tests/` | Automated tests for the pipeline |
+| `results/` | Experiment reports and generated artifacts |
 
-### 1. Clone the Repository
+## Requirements
+
+- Python version compatible with the project's dependencies; Python 3.13 has been used in development.
+- Git.
+- Docker Desktop or Docker Engine for experiments that use the Docker sandbox.
+- A valid API key for the selected real LLM provider.
+- Python dependencies listed in `requirements.txt`.
+
+Docker availability and configuration may be required for the experiment runner to evaluate code. Consult the sandbox implementation and local Docker setup if an experiment fails during test execution.
+
+## Installation
+
+### 1. Clone the repository
+
 ```bash
 git clone https://github.com/spkara25/Comparative-AI-Refactoring-Pipeline.git
 cd Comparative-AI-Refactoring-Pipeline/actual_app
 ```
 
-### 2. Create and Activate a Virtual Environment
-```bash
-# macOS / Linux
-python3 -m venv venv
-source venv/bin/activate
+### 2. Create a virtual environment
 
-# Windows (WSL or PowerShell)
-python -m venv venv
-.\venv\Scripts\activate
+**macOS / Linux**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
-### 3. Install Dependencies
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
+**Windows PowerShell**
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
 ```
 
-### 4. Configure Environment Variables
-Copy the template file to `.env`:
+### 3. Install dependencies
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### 4. Configure environment variables
+
+Create a local environment file from the provided template:
+
+**macOS / Linux**
+
 ```bash
 cp .env.example .env
 ```
-Edit `.env` to configure your preferred provider and API keys:
-```ini
-# Provider Options: mock | openai | anthropic
+
+**Windows PowerShell**
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Edit `.env` locally to configure the desired provider, model, and corresponding API credentials.
+
+Do not commit `.env` or publish API keys.
+
+## Configuration
+
+The `.env.example` file provides the configuration template.
+
+For a Gemini experiment, the relevant settings are:
+
+```dotenv
+LLM_PROVIDER=gemini
+LLM_MODEL=gemini-3.5-flash-lite
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+Replace the placeholder with your own API key in the local `.env` file.
+
+For a mock-provider run, configure:
+
+```dotenv
 LLM_PROVIDER=mock
-
-# Model Selection:
-# For OpenAI: gpt-4o-mini, gpt-4o
-# For Anthropic: claude-3-5-sonnet-20241022
-# For Mock: mock-default
-LLM_MODEL=mock-default
-
-# API Keys (Required only if using live cloud providers)
-OPENAI_API_KEY=your_openai_api_key_here
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-
-# Researcher Metadata (Optional)
-RESEARCHER_NAME="Shreeja Karajagi"
-RESEARCHER_EMAIL="researcher@benchmark.local"
 ```
 
-> **Note:** The `mock` provider runs completely offline and requires no API keys or network connection.
+The mock provider is useful for checking the pipeline workflow without making a real LLM API request. Mock-generated outputs must not be interpreted as actual Gemini, OpenAI, or Anthropic results.
 
-### 5. Build the Docker Sandbox Image
-Ensure Docker Desktop or the Docker daemon is running, then build the sandbox image:
+Provider names, model identifiers, required credentials, and optional settings must match the implementations available in the repository.
+
+## Running the Tests
+
+Run the automated test suite from the project root:
+
 ```bash
-docker build -t ai-refactor-sandbox docker/
+python -m pytest -q
 ```
 
-Verify that the image built successfully:
-```bash
-docker image inspect ai-refactor-sandbox > /dev/null && echo "Sandbox ready!"
-```
+This executes the project's available automated tests. A successful test run helps verify the pipeline implementation, but does not independently establish the correctness of every experiment or every generated refactoring.
 
----
+## Running Experiments
 
-## Running the Pipeline
+### Run the configured experiment workflow
 
-Execute the main CLI entry point:
+Review `app/main.py` and the relevant provider and experiment configuration before running:
+
 ```bash
 python -m app.main
 ```
 
-### What Happens During Execution:
-1. **Database Initialization:** Sets up the SQLite database schema in `results/research_benchmark.db` and registers the active researcher.
-2. **Dataset Ingestion:** Discovers legacy code modules in `datasets/legacy` (`humaneval_0.py`–`4.py`, `monolithic_processor.py`, `nested_calculator.py`) and maps them to their respective test suites in `datasets/tests/`.
-3. **Experiment Matrix Setup:** Prepares prompting strategies:
-   - *Strategy 1:* Refactor to adhere strictly to PEP 8 standards with type hints and docstrings.
-   - *Strategy 2:* Refactor to reduce cyclomatic complexity and flatten conditional branches.
-4. **Execution & Metric Extraction:**
-   - Evaluates baseline static metrics on the host OS using Radon.
-   - Invokes the selected LLM provider and cleans markdown formatting via regex sanitization.
-   - Evaluates refactored static metrics.
-   - Mounts original and refactored code into the isolated Docker container to execute dynamic tests and extract coverage percentages.
-   - Evaluates behavioral invariance ($\text{PassRate}_{\text{refact}} \ge \text{PassRate}_{\text{orig}}$).
-5. **Persistence & Export:**
-   - Persists all metrics and experiment records to the relational database.
-   - Writes a full CSV report to `results/benchmark_report.csv`.
-   - Generates a grouped delta bar chart at `results/complexity_maintainability_delta.png`.
+The configured provider and experiment settings determine which experiments are executed.
 
----
+**Important:** The full experiment workflow may make API calls, incur provider charges, and overwrite existing report files. Back up any results you need to preserve before running it.
 
-## Generated Artifacts
+For initial setup checks, use the mock provider. Use a real provider when you are ready to perform and record genuine LLM experiments.
 
-Upon completion, all outputs are located in the `results/` folder:
+### Run an individual experiment
 
-- **`results/benchmark_report.csv`:** Detailed metrics per run (original vs. refactored CC, Halstead Volume, Maintainability Index, pass rate, coverage, delta calculations, and boolean `behavior_preserved`).
-- **`results/complexity_maintainability_delta.png`:** Comparative visualization of $\Delta CC$ vs. $\Delta MI$ across all experimental runs.
-- **`results/research_benchmark.db`:** SQLite database storing normalized tables (`researchers`, `evaluation_metrics`, `experiment_results`).
+The project also supports running individual experiments through its experiment runner. The source file, prompt configuration, and provider can be selected in the calling code.
 
----
+For example, the development workflow has used `ExperimentRunner.run_single()` to evaluate individual legacy programs with the Gemini provider.
 
-## Running the Test Suite
+Refer to `app/services/experiment_runner.py` and the current application configuration for the exact parameters and supported invocation.
 
-The repository contains unit tests, integration tests, and sandbox validation tests:
+### Regenerate the visualization
+
+To regenerate the chart from an existing benchmark report without running the full benchmark:
 
 ```bash
-# Run all tests
-pytest tests/
-
-# Run with verbose output and coverage
-pytest tests/ -v --cov=app --cov-report=term-missing
+python regenerate_chart.py
 ```
 
-To run end-to-end pipeline verification:
-```bash
-pytest tests/test_e2e_pipeline.py -v
-```
+Ensure that the input report contains the intended dataset before regenerating the chart. A visualization based on mock-provider results should be identified accordingly.
 
----
+## Understanding the Results
 
-## Security Sandbox Specifications
+The evaluation records measurements before and after refactoring.
 
-To protect the host operating system against untrusted or hallucinated generative code, the Docker sandbox enforces:
-- `--network none`: Complete network isolation.
-- `--read-only`: Read-only root filesystem.
-- `--cap-drop=ALL`: Removal of all Linux kernel capabilities.
-- `--security-opt=no-new-privileges`: Prevention of privilege escalation.
-- `--memory=256m` and `--cpus=1`: Strict resource limits preventing denial-of-service / fork-bombs.
-- Temporary volume mounts (`/sandbox:ro` and `/results:rw`) to strictly isolate source code from result telemetry.
+| Metric | Interpretation |
+|---|---|
+| Cyclomatic complexity | Measures the number of independent control-flow paths; a reduction may indicate simpler control flow |
+| Halstead volume | Estimates program volume from operators and operands |
+| Maintainability index | A composite static metric; a higher value generally indicates better maintainability under the metric's assumptions |
+| Test pass rate | Percentage of executed tests that pass |
+| Coverage percentage | Percentage of measured code covered during test execution |
 
----
+### Metric deltas
 
-## License & Citation
+For the metrics reported by this project, the delta is calculated as:
 
-Developed for empirical software engineering research in automated code refactoring. For citation details, refer to the [IEEE Project Report](IEEE_Project_Report.md).
+**Delta = Refactored value − Original value**
+
+Consequently:
+
+- A negative complexity delta indicates reduced cyclomatic complexity.
+- A negative Halstead-volume delta indicates reduced Halstead volume.
+- A positive maintainability-index
